@@ -11,6 +11,12 @@ use Symfony\Component\HttpFoundation\Request;
 use App\Entity\Chistes;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
+use Nelmio\ApiDocBundle\Annotation\Model;
+use Nelmio\ApiDocBundle\Annotation\Security;
+use OpenApi\Annotations as OA;
+
+
+
 /**
  * @Route("/api", name="api_")
  */
@@ -21,8 +27,32 @@ class ChistesController extends AbstractController
         private HttpClientInterface $client,
     ) {
     }
+
+
     /**
-    * @Route("/chistes", name="project_index", methods={"GET"})
+     * Return a joke from origin especified in query param "origin"
+     * 
+     * @Route("/chistes", name="project_index", methods={"GET"})
+     * 
+     * @OA\Response(
+     *     response=200,
+     *     description="Return a random joke from origin especified in query param",
+     *     @OA\JsonContent(
+     *        type="object",
+     *        @OA\Property(property="chiste",format="string")
+     *     )
+     * )
+     * @OA\Response(
+     *     response=500,
+     *     description="Return error message",
+     *    
+     * )
+     * @OA\Parameter(
+     *     name="origin",
+     *     in="query",
+     *     description="The field used to check joke source",
+     *     @OA\Schema(type="string")
+     * )
     */
     public function index(Request $request): JsonResponse
     {
@@ -86,7 +116,40 @@ class ChistesController extends AbstractController
     }
 
     /**
+     * Creates a joke in Database
+     * 
      * @Route("/chistes", name="chistes_new", methods={"POST"})
+     * 
+     * @OA\Response(
+     *     response=200,
+     *     description="Creates a new joke in Db",
+     *     @OA\JsonContent(
+     *        type="object",
+     *        @OA\Property(property="message",format="string"),
+     *        @OA\Property(property="status",type="integer",format="int32",default="200"),
+     *     )
+     * )
+     * @OA\Response(
+     *     response=500,
+     *     description="Return error message",
+     *     @OA\JsonContent(
+     *        type="object",
+     *        @OA\Property(property="message",format="string"),
+     *        @OA\Property(property="status",type="integer",format="int32",default="500"),
+     *     )
+     *    
+     * )
+     * @OA\RequestBody(
+     *     description="The joke object",
+     *     required=true,
+     *     @OA\JsonContent(
+     *          type="object",
+     *          @OA\Property(property="text",format="string"),
+     *          @OA\Property(property="origin",format="string"),
+     *      )
+     * )
+     * 
+     *
      */
     public function new(ManagerRegistry $doctrine, Request $request): Response
     {
@@ -114,7 +177,42 @@ class ChistesController extends AbstractController
     }
 
     /**
+     * Update a joke in dataase
+     * 
      * @Route("/chistes", name="chistes_update", methods={"PATCH", "PUT"})
+     * 
+     * 
+     * @OA\Response(
+     *     response=200,
+     *     description="Updates a joke in Db",
+     *     @OA\JsonContent(
+     *        type="object",
+     *        @OA\Property(property="message",format="string"),
+     *        @OA\Property(property="status",type="integer",format="int32",default="200"),
+     *     )
+     * )
+     * @OA\Response(
+     *     response=500,
+     *     description="Return error message",
+     *     @OA\JsonContent(
+     *        type="object",
+     *        @OA\Property(property="message",format="string"),
+     *        @OA\Property(property="status",type="integer",format="int32",default="500"),
+     *     )
+     *    
+     * )
+     * @OA\RequestBody(
+     *     description="The joke object",
+     *     required=true,
+     *     @OA\JsonContent(
+     *          type="object",
+     *          @OA\Property(property="number",type="integer",format="int32"),
+     *          @OA\Property(property="text",format="string"),
+     *          @OA\Property(property="origin",format="string"),
+     *      )
+     * )
+     * 
+     *
      */
     public function update(ManagerRegistry $doctrine, Request $request): Response
     {
@@ -150,6 +248,77 @@ class ChistesController extends AbstractController
         return $this->json([
             "message" => 'Updated joke successfully with id ' . $chiste->getId() . ': ' . $chiste->getText() ,
             "status" => 200
+        ]);
+    }
+
+    /**
+     * Deletes a joke by number 
+     * 
+     * @Route("/chistes", name="chiste_delete", methods={"DELETE"})
+     * 
+     * @OA\Response(
+     *     response=200,
+     *     description="Updates a joke in Db",
+     *     @OA\JsonContent(
+     *        type="object",
+     *        @OA\Property(property="message",format="string"),
+     *        @OA\Property(property="status",type="integer",format="int32",default="200"),
+     *     )
+     * )
+     * @OA\Response(
+     *     response=500,
+     *     description="Return error message",
+     *     @OA\JsonContent(
+     *        type="object",
+     *        @OA\Property(property="message",format="string"),
+     *        @OA\Property(property="status",type="integer",format="int32",default="500"),
+     *     )
+     *    
+     * )
+     * @OA\RequestBody(
+     *     description="The joke object",
+     *     required=true,
+     *     @OA\JsonContent(
+     *          type="object",
+     *          @OA\Property(property="number",type="integer",format="int32"),
+     *         
+     *      )
+     * )
+     * 
+     *
+     */
+    public function delete(ManagerRegistry $doctrine, Request $request): Response
+    {
+        $data = json_decode(
+            $request->getContent(),
+            true
+        );
+        
+        if(!isset($data["number"])){
+            return $this->json([
+                'message' => 'Please provide a joke number to be deleted',
+                'status'  => 500
+            ]); 
+        }
+
+        
+
+        $entityManager = $doctrine->getManager();
+        $chiste = $entityManager->getRepository(Chistes::class)->find($data["number"]);
+  
+        if (!$chiste) {
+            return $this->json([
+                "message" => 'No joke found for number ' . $data["number"],
+                "status" => 404
+            ], 404);
+        }
+
+        $entityManager->remove($chiste);
+        $entityManager->flush();
+  
+        return $this->json([
+            "message" => 'Deleted a joke successfully with number ' . $chiste->getId(),
+            "status"  => 200
         ]);
     }
 }
