@@ -19,3 +19,5 @@
 ## Documentation Path
 Can find the api docs in path /api/doc
 
+## Testing
+You can run tests by executing this command line: php bin/phpunit
