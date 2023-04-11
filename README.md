@@ -11,10 +11,10 @@
 - Composer
 
 ## Deployment steps:
-1. Clone the repository in a empty folder
-2. Execute the command composer install
+1. Clone the repository in an empty folder
+2. Execute the command "composer install"
 3. Change the Database connection in .env
-4. Execute the command php bin/console doctrine:migrations:migrate
+4. Execute the command "php bin/console doctrine:migrations:migrate"
 
 ## Documentation Path
 Can find the api docs in path /api/doc
