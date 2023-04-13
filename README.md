@@ -20,6 +20,10 @@
 Can find the api docs in path /api/doc
 
 ## Testing
+First of all you must prepare database for testing doing the following command:
+"php bin/console --env=test doctrine:database:create"
+And:
+"php bin/console --env=test doctrine:schema:create"
 You can run tests by executing this command line: php bin/phpunit
 ### TODO
 Tests are not finished yet
